@@ -134,8 +134,14 @@ int IglMachine::searchEmpty() {
 		}
 	}
 	*/
-	if (!nameMap.empty()) {
-		return nameMap.begin()->second;
+	int tar = -1;
+	for (auto i : emptySet) {
+		tar = i;
+		break;
+	}
+	if (tar >= 0) {
+		emptySet.erase(tar);
+		return tar;
 	}
 	insertEmpty();
 	if (mesh.size() == dataNumLimit)std::cout << "No more room for iglmachine...";

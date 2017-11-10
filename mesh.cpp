@@ -33,6 +33,7 @@ unsigned int Mesh::pushVertice(Vector3 v){
     vertices.push_back(v.x);vertices.push_back(v.y);vertices.push_back(v.z);
     return vertices.size()/3-1;
 }
+
 void Mesh::putVertice(int idx, Vector3 v){
     vertices[idx*3] = v.x;
     vertices[idx*3+1] = v.y;
@@ -56,12 +57,28 @@ void Mesh::rotateTo(Vector3 vec){
     vec.normalize();
     float angle = acos(Vector3(0,0,1).dot(vec))*180.0f/M_PI;
     Vector3 axis = Vector3(0,0,1).cross(vec).normalize();
+	if (std::abs(Vector3(0, 0, 1).dot(vec))>0.99)axis = Vector3(1, 0, 0);
     Matrix4 mat;
     mat.rotate(angle, axis);
     for(int i=0;i<vertices.size()/3;i++){
         putVertice(i, mat * getVertice(i));
-
     }
+}
+
+void Mesh::translate(Vector3 pos) {
+	for (int i = 0; i < vertices.size(); i+=3) {
+		vertices[i] += pos.x;
+		vertices[i+1] += pos.y;
+		vertices[i+2] += pos.z;
+	}
+}
+
+void Mesh::scale(Vector3 scale) {
+	for (int i = 0; i < vertices.size(); i += 3) {
+		vertices[i] *= scale.x;
+		vertices[i + 1] *= scale.y;
+		vertices[i + 2] *= scale.z;
+	}
 }
 
 void Mesh::purne() {
@@ -97,12 +114,12 @@ Mesh Mesh::genCube(Vector3 ld, Vector3 ru){
     pushVertice(Vector3(ru.x,ru.y,ru.z));
     pushVertice(Vector3(ld.x,ru.y,ru.z));
     indices.swap(std::vector<unsigned int>());
-    pushIndice(1,0,3,2);
+    pushIndice(0,3,2,1);
     pushIndice(4,5,6,7);
     pushIndice(0,1,5,4);
-    pushIndice(2,3,7,6);
+    pushIndice(6,2,3,7);
     pushIndice(3,0,4,7);
-    pushIndice(1,2,6,5);
+    pushIndice(2,6,5,1);
     normals = vertices;
     return *this;
 }
@@ -123,6 +140,25 @@ Mesh Mesh::genTri(Vector3 c, float r){
 }
 
 Mesh Mesh::slice(Vector3 c,Vector3 n){ // will remove indices
+	n.normalize();
+	float min = FLT_MAX, max = FLT_MIN;
+	for (int i = 0; i < vertices.size() / 3; i++) {
+		Vector3 v = getVertice(i);
+		float d = (v - c).dot(n);
+		min = d < min ? d : min;
+		max = d > max ? d : max;
+	}
+	if (min > -minThre * 10) {
+		return Mesh();
+	}
+	if (max < minThre * 10) {
+		Mesh copy(vertices, indices);
+		vertices.swap(std::vector<float>());
+		normals.swap(std::vector<float>());
+		indices.swap(std::vector<unsigned int>());
+		return copy;
+	}
+	//*************************
     regenByPlateIntersec(c, n);
     Mesh another = Mesh(vertices, indices);
 	filte(c, n);//purne();
@@ -333,6 +369,15 @@ void Mesh::addMesh(Mesh mesh) {
 }
 
 void Mesh::merge() {
+	bool * delind; delind = (bool*)malloc(sizeof(bool)*indices.size() / 3); memset(delind, false, indices.size() / 3);
+	for (int i = 0; i < indices.size()/3; i++) {
+		if (delind[i])continue;
+		for (int j = i + 1; j < indices.size()/3; j++) {
+			Vector3 c1 = (getVertice(indices[i * 3]) + getVertice(indices[i * 3 + 1]) + getVertice(indices[i * 3 + 2])) / 3;
+			Vector3 c2 = (getVertice(indices[j * 3]) + getVertice(indices[j * 3 + 1]) + getVertice(indices[j * 3 + 2])) / 3;
+			if ((c1 - c2).length() < minThre) delind[i] = delind[j] = true;
+		}
+	}
 	int * visited; visited = (int*)malloc(sizeof(int)*vertices.size() / 3); memset(visited, -1, vertices.size() / 3);
 	for (int i = 0; i < vertices.size() / 3; i++) {
 		visited[i] = i;
@@ -348,14 +393,43 @@ void Mesh::merge() {
 	}
 	purne();
 }
+
 void Mesh::fillHole() {
 	cgaltool.readFromOFFStream(vertices, indices, cgaltool.fillHoleAndGetStr(vertices, indices));
 }
+
 void Mesh::convexHull() {
 	cgaltool.readFromOFFStream(vertices, indices, cgaltool.convexHullAndGetStr(vertices, indices));
 }
+
 void Mesh::simplify() {
 	cgaltool.readFromOFFStream(vertices, indices, cgaltool.simplifyAndGetStr(vertices, indices));
+}
+
+void Mesh::shrink(float val) {
+	std::vector<Vector3> move(vertices.size() / 3, Vector3(0, 0, 0));
+	std::vector<int> times(vertices.size() / 3, 0);
+	for (int i = 0; i < indices.size(); i+=3) {
+		Vector3 v1 = getVertice(indices[i]);
+		Vector3 v2 = getVertice(indices[i+1]);
+		Vector3 v3 = getVertice(indices[i+2]);
+		Vector3 vec = -((v2 - v1).cross(v3 - v2));
+		if (vec.length()!=0) {
+			vec.normalize();
+			move[indices[i]] += vec;
+			move[indices[i + 1]] += vec;
+			move[indices[i + 2]] += vec;
+			times[indices[i]]++;
+			times[indices[i + 1]]++;
+			times[indices[i + 2]]++;
+		}
+	}
+	for (int i = 0; i < vertices.size() / 3; i++) {
+		//printf("\n%d\n", times[i]);
+		//printf("  %f %f %f\n", getVertice(i).x, getVertice(i).y ,getVertice(i).z);
+		if(times[i]>0)putVertice(i, getVertice(i) + (move[i] * val / (float)times[i]));
+		//printf("~~%f %f %f\n\n", getVertice(i).x, getVertice(i).y, getVertice(i).z);system("pause");
+	}
 }
 //***************************************************************************************************************
 //***************************************************************************************************************

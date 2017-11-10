@@ -12,10 +12,10 @@ void Group::initAva() {
 	}
 }
 
-Mesh Group::getMesh() {
+Mesh Group::getMesh(std::vector<Piece> & piecesref) {
 	Mesh mesh;
 	for (int i = 0; i < pieces.size(); i++) {
-		mesh.addMesh(pieces[i].mesh);
+		mesh.addMesh(piecesref[pieces[i]].mesh);
 	}
 	return mesh;
 }

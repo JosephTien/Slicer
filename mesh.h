@@ -34,6 +34,8 @@ public:
 	void pushIndice(unsigned int a, unsigned int b, unsigned int c, unsigned int d);
 	void purne();
 	void rotateTo(Vector3 vec);
+	void translate(Vector3 pos);
+	void scale(Vector3 scale);
     Mesh slice(Vector3 c,Vector3 n);
     void regenByPlateIntersec(Vector3 c, Vector3 n);
     Mesh genCube(Vector3 ld, Vector3 ru);
@@ -45,6 +47,7 @@ public:
 	void fillHole();
 	void convexHull();
 	void simplify();
+	void shrink(float val);
 	static float area(Vector3 a, Vector3 b, Vector3 c);
     //******************************************************************
     //******************************************************************

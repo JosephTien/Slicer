@@ -6,8 +6,55 @@ int main(int argc, char *argv[]) {
     Utility utility;
 	srand((unsigned)time(NULL));
     if(argc>1){
-        //utility.genPieceGroupMesh(argv[1]);
-		utility.genPiece(argv[1]);
+		if (strcmp(argv[1], "slice") == 0) {
+			utility.genPiece_slice();
+			utility.topo.read();
+			utility.csgShape();
+			utility.outputGroup();
+		}else if (strcmp(argv[1], "tune")==0) {
+			utility.topo.read();
+			utility.topo.geneOpt();
+			//utility.topo.atomOpt();
+			//utility.topo.beeOpt();
+			utility.topo.outputRotateArg();
+		}
+		else if (strcmp(argv[1], "less") == 0) {
+			utility.topo.read();
+			utility.topo.geneLess();
+			//utility.topo.optMode = 1;	
+			//utility.topo.geneOpt(0, 180, 0.01);
+			//utility.topo.atomOpt();
+			//utility.topo.beeOpt();
+			utility.topo.outputRotateArg();
+		}
+		else if (strcmp(argv[1], "bfs") == 0) {
+			utility.topo.read();
+			utility.calBound();
+			utility.genVoxel();
+			utility.voxelBfs();
+			utility.outputPiece_voxel();
+			utility.outputKnife();
+			std::cout << "Done" << std::endl;
+		}
+		else if (strcmp(argv[1], "voxel") == 0) {
+			utility.topo.read();
+			utility.calBound();
+			utility.topo.genKnife();
+			utility.outputKnife();
+			utility.genPiece_voxel();
+			std::cout << "Piece Generated!" << std::endl;
+			utility.initGroup();
+			std::cout << "Group Initialized!" << std::endl;
+			utility.initLink_voxel();
+			std::cout << "Link Initialized!" << std::endl;
+			utility.optimize();
+			std::cout << "Optimized!" << std::endl;
+			utility.outputGroup_voxel();
+		}
+		else {
+			//utility.genPieceGroupMesh(argv[1]);
+			utility.genPiece(argv[1]);
+		}
 	}
 	else {
 		//utility.genRandomTest(20);
@@ -17,13 +64,17 @@ int main(int argc, char *argv[]) {
 		utility.outputKnife();
 		utility.calBound();
 		utility.genPiece();
+		//utility.genPiece_voxel();
 		//utility.outputPiece();
 		std::cout << "Piece Generated!" << std::endl;
 		utility.initGroup();
 		std::cout << "Group Initialized!" << std::endl;
+		utility.initLink();
+		std::cout << "Link Initialized!" << std::endl;
 		utility.optimize();
 		std::cout << "Optimized!" << std::endl;
 		utility.outputGroup();
+		//utility.outputGroup_voxel();
 	}
 	char c = scanf("%c", &c);
 }
