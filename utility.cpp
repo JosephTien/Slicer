@@ -459,7 +459,7 @@ void Utility::genPiece_slice() {
 				min.x = std::min(min.x, vert.x);
 				min.y = std::min(min.y, vert.y);
 				min.z = std::min(min.z, vert.z);
-				max.x = std::max(max.x, vert.x);
+				max.x = std::max(max.x, vert.x); 
 				max.y = std::max(max.y, vert.y);
 				max.z = std::max(max.z, vert.z);
 			}
@@ -468,8 +468,8 @@ void Utility::genPiece_slice() {
 	//*****************************
 	//shell
 	Piece piece;
-	piece.mesh = Mesh().genCube(min - Vector3(10, 10, 10), max + Vector3(10, 10, 10));
-	Mesh mesh = Mesh().genCube(min - Vector3(2, 2, 0), max + Vector3(2, 2, 11));
+	piece.mesh = Mesh().genCube(min - Vector3(20, 20, 10), max + Vector3(20, 20, 10));
+	Mesh mesh = Mesh().genCube(min - Vector3(3, 3, 0), max + Vector3(3, 3, 11));
 	iglMachine.put("shell", piece.mesh.vertices, piece.mesh.indices);
 	iglMachine.put("inner", mesh.vertices, mesh.indices);
 	char str[50];
@@ -863,10 +863,14 @@ void Utility::outputGroup() {
 		/**/
 		sprintf(str, "- shape_%d shape_%d all", j, j);
 		iglMachine.command(str);
+
 		iglMachine.writeFile(str1, str2);
 		printf("Write %s\n", str1);
 		//std::cout << "Write " << str1 << std::endl;
 	}
+	char str3[20] = "all";
+	char str4[20] = "pool\\thin_0.obj";
+	iglMachine.writeFile(str3, str4);
 	FILE* fp = fopen("shapeinfo.txt","w");
 	fprintf(fp, "%d\n", cnt);
 	for (int i = 0; i < groups.size();i++) {
