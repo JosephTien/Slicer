@@ -23,6 +23,10 @@ public:
 	int groupidcnt = 0;
 	Vector3 ld, ru;
 	const float l = 2.0f;
+	/*special case mode*/
+	bool caseplane = false;
+	int injnum = 10;
+	/**/
 	void genRandomTest(int k);
     void genPieceGroupMesh(std::string filename);
 	void calBound();
@@ -34,6 +38,7 @@ public:
 	void genPiece(std::string filename, bool output);
 	void genPiece_slice();
 	void csgShape();
+	void moldMold(int shapenum);
 	void appendPiece(Group& group, Piece& piece);
 	void MergeGroup(Group& group1, Group& group2);
 	void initGroup();

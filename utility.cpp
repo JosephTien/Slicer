@@ -468,7 +468,7 @@ void Utility::genPiece_slice() {
 	//*****************************
 	//shell
 	Piece piece;
-	piece.mesh = Mesh().genCube(min - Vector3(20, 20, 10), max + Vector3(20, 20, 10));
+	piece.mesh = Mesh().genCube(min - Vector3(10, 10, 10), max + Vector3(10, 10, 10));
 	Mesh mesh = Mesh().genCube(min - Vector3(3, 3, 0), max + Vector3(3, 3, 11));
 	iglMachine.put("shell", piece.mesh.vertices, piece.mesh.indices);
 	iglMachine.put("inner", mesh.vertices, mesh.indices);
@@ -497,10 +497,10 @@ void Utility::genPiece_slice() {
 }
 
 void Utility::csgShape() {
-	Mesh sphere; sphere.load("pool/sphere.obj");
-	Mesh cylinder; cylinder.load("pool/cylinder.obj");
+	Mesh sphere; sphere.load("pool/finesphere.obj");
+	Mesh cylinder; cylinder.load("pool/finecylinder2.obj");
 	Mesh all;
-	float r = topo.radii * 3;
+	float r = topo.radii * topo.radiiscale;
 	for (int i = 0; i < topo.vertices.size(); i++) {
 		Mesh mesh = sphere;
 		mesh.scale(Vector3(r, r, r));
@@ -544,20 +544,30 @@ void Utility::csgShape() {
 		}
 	}
 	float range = 10;
+	int highnum = 0;
 	for (int i = 0; i < topo.vertices.size(); i++) {
 		if (topo.vertices[i].z > high.z - range && localhigh[i]) {
 			Mesh mesh = cylinder;
-			mesh.scale(Vector3(r, r, 100));
+			float rr = highnum == 0 ? r : (r / 3.0f);
+			mesh.scale(Vector3(rr, rr, 100));
 			//mesh.rotateTo(Vector3(0,0,1));
 			mesh.translate(topo.vertices[i] + Vector3(0, 0, 50));
 			all.addMesh(mesh);
 			std::cout << "high point : " << topo.vertices[i] << std::endl;
+			highnum++;
+			if (highnum >= injnum)break;
 		}
 	}
 	//********************************************
 	iglMachine.put("all", all.vertices, all.indices);
 	iglMachine.command("+ all all null");
 	std::cout << "Generate Thinstruct" << std::endl;
+	//*****************************************
+	if (caseplane) {
+		Mesh hull; hull.load("pool/hull.obj");
+		iglMachine.put("hull", hull.vertices, hull.indices);
+		iglMachine.command("+ hull hull null");
+	}
 	//*****************************************
 	for (int i = 0; i < pieces.size(); i++) {
 		char str[20];
@@ -585,6 +595,42 @@ void Utility::csgShape() {
 		iglMachine.get(str, pieces[i].mesh.vertices, pieces[i].mesh.indices);
 	}
 	*/
+}
+
+void Utility::moldMold(int shapenum) {
+	for (int i = 0; i < shapenum; i++) {
+		char path[20];
+		sprintf(path, "pool\\shape_%d.obj", i);
+		Mesh obj; obj.load(path);
+		Vector3 min(FLT_MAX, FLT_MAX, FLT_MAX);
+		Vector3 max(FLT_MIN, FLT_MIN, FLT_MIN);
+		for (int v = 0; v < obj.vertices.size(); v+=3) {
+			min.x = std::min(min.x, obj.vertices[v]);
+			min.y = std::min(min.y, obj.vertices[v + 1]);
+			min.z = std::min(min.z, obj.vertices[v + 2]);
+			max.x = std::max(max.x, obj.vertices[v]);
+			max.y = std::max(max.y, obj.vertices[v + 1]);
+			max.z = std::max(max.z, obj.vertices[v + 2]);
+		}
+		min -= Vector3(5, 5, 5);
+		max += Vector3(5, 5, -0.5f);
+		Mesh cube;
+		cube.genCube(min, max);
+
+		char str[50];
+		char str1[20];
+		char str2[20];
+		sprintf(str1, "shape_%d", i);
+		sprintf(str2, "cube_%d", i);
+		iglMachine.put(str1, obj.vertices, obj.indices);
+		iglMachine.put(str2, cube.vertices, cube.indices);
+		sprintf(str, "- mold_%d cube_%d shape_%d", i, i, i);
+		iglMachine.command(str);
+		sprintf(str1, "mold_%d", i);
+		sprintf(str2, "pool\\mold_%d.obj", i);
+		iglMachine.writeFile(str1, str2);
+		std::cout << "Write mold_" << i << std::endl;
+	}
 }
 
 void Utility::initGroup() {
@@ -863,6 +909,10 @@ void Utility::outputGroup() {
 		/**/
 		sprintf(str, "- shape_%d shape_%d all", j, j);
 		iglMachine.command(str);
+		if (caseplane) {
+			sprintf(str, "* shape_%d shape_%d hull", j, j);
+			iglMachine.command(str);
+		}
 
 		iglMachine.writeFile(str1, str2);
 		printf("Write %s\n", str1);

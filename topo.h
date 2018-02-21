@@ -74,6 +74,7 @@ public:
 	std::vector<float> angles;
 	int optMode = 0;
 	const float radii = 5.0f;
+	const float radiiscale = 1.5;//~~3 ~~5
 	int verticenum;
 	int edgenum;
 	void genKnife();

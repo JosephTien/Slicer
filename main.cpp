@@ -11,7 +11,12 @@ int main(int argc, char *argv[]) {
 			utility.topo.read();
 			utility.csgShape();
 			utility.outputGroup();
-		}else if (strcmp(argv[1], "tune")==0) {
+		}else if (strcmp(argv[1], "mold") == 0) {
+			int shapenum;
+			sscanf(argv[2], "%d", &shapenum);
+			utility.moldMold(shapenum);
+		}
+		else if (strcmp(argv[1], "tune")==0) {
 			utility.topo.read();
 			utility.topo.geneOpt();
 			//utility.topo.atomOpt();
